@@ -1,183 +1,108 @@
 """
 objects
 """
-class Currentobject(object):
+from constant import *
+import copy
+
+class Trial(object):
     """
-    The object currently recognized
+    The trial
     """
-    # Attribute _x: the x-coordinate of the object
-    # Invariant: _x is a number
+    # Attribute _position: the position of the rat
+    # Invariant: _position is a list of [x,y,frame], this fram is the frame in video
 
-    # Attribute _y: the y-coordinate of the object
-    # Invariant: _y is a number
+    # Attribut _t: the number of trial this frame belongs to
+    # Invariant: _t is a number
 
-    # Attribute _r: the radius of the object
-    # Invariant: _r is a number
+    # Attribute _o: the object in this frame
+    # Invariant: _o is a number or None
 
-    # Attribute _s: the state of the contuniuty of the object
-    # Invariant: _s is True or False
+    # Attribute _p: the potential object in this frame
+    # Invariant: _p is a list of positive int or None
 
-    # Attribute _c: the state of the contact with the cup
-    # Invariant: _c is True or False
-
-    # Attribute _no: form the latency for the cup to disappear
-    # Invariant: _no is a number
-
-    def __init__ (self):
+    def __init__ (self,t):
         """
-        Create an empty object
+        Create an empty frame
         """
-        self._x=0
-        self._y=0
-        self._r=0
-        self._s=False
-        self._c=False
-        self._no=0
+        self._position=[]
+        self._t=t
+        self._o=None
+        self._p=[]
+
+    def getposition(self):
+        """
+        return the position of the rat
+        """
+        return self._position
     
-    def check_state(self,x,y,r):
+    def gettrial(self):
         """
-        change the state to false is the next object is too different in radius or in location & return the state
+        return the trial number
         """
-        if abs(r-self._r)>10:
-            self._s=False
-        elif ((x-self._x)**2+(y-self._y)**2)**0.5>self._r:
-            self._s=False
+        return self._t
+
+    def getobject(self):
+        """
+        return the object in this frame
+        """
+        return self._o
+
+    def setobject(self,o):
+        """
+        set the object in this frame
+
+        Parameter o: the object to set
+        Precondition: o is a number or None
+        """
+        self._o=o
+
+    def addposition(self,x,y,f):
+        """
+        add the position of the rat
+
+        Parameter x: the x position
+        Parameter y: the y position
+        Parameter f: the frame number in video
+        Precondition: x,y,t are numbers
+        """
+        self._position.append([x,y,f])
+    
+    def addpotential(self,p):
+        """
+        add the potential object in this frame
+
+        Parameter p: the potential object to add
+        Precondition: p is a positive int or None
+        """
+        self._p.append(p)
+
+    def compute_o(self,cupscount):
+        """
+        compute the object in this frame
+        if there is no potential object in this frame, set _o to be None
+        if there is 30 more in a potential object, set _o to be that object
+        if there is no 30 more of any potential object, set _o to be None
+
+        Parameter cupscount: the number of cups in the frame
+        Precondition: cupscount is a number
+        """
+        #print("cupscount:",cupscount)
+        if len(self._p)==0:
+            self.setobject(None)
         else:
-            self._s=True
-        return self._s
-
-    def check_delay(self):
-        """
-        change the object to empty when it reaches the latency
-        """
-        if self._no==60:
-            self._x=0
-            self._y=0
-            self._r=0
-            self._s=False
-            self._c=False
-            self._no=0
-
-    def noadd(self):
-        """
-        add one to _no
-        """
-        self._no=self._no+1
-
-    def noclear(self):
-        """
-        set _no to 0
-        """
-        self._no=0
-
-    def changestate(self,state):
-        """
-        change the state to true
-
-        Parameter state: the state to change
-        Precondition: state is True or False
-        """
-        self._s=state
-
-    def getlocation(self):
-        """
-        return the location in a list of [x,y]
-        """
-        return [self._x,self._y]
-    
-    def getradius(self):
-        """
-        return the radius
-        """
-        return self._r
-    
-    def getstate(self):
-        """
-        return the state
-        """
-        return self._s
-
-    def getcontact(self):
-        """
-        return the contact
-        """
-        return self._c
-
-    def changecontact(self):
-        """
-        change the contact
-        """
-        self._c=not self._c
-
-    def update(self,l):
-        """
-        change the current object
-
-        Parameter l: the information about the object---[x,y,r]
-        Precondition: l is a list
-        """
-        self._x=l[0]
-        self._y=l[1]
-        self._r=l[2]
-        self._s=True
-        self._c=False
-    
-class Potentialobject(object):
-    """
-    All the potential objects
-    """
-    # Attribute _l: all potential objects
-    # Invariant: _l is a list
-
-    def __init__ (self):
-         """
-         create an empty list
-         """
-         self._l=[]
-    
-    def add(self,c):
-        """
-        add a new potential list
-
-        Parameter c: the information about the object---[x,y,r]
-        Precondition: c is a list
-        """
-        r=self.selfcheck_helper(c)
-        if r==False or r==None:
-            c.append(0)
-            self._l.append(c)
-        else:
-            n=self._l.index(r)
-            self._l[n][3]=self._l[n][3]+1
-            #print("num"+str(self._l[n][3]))
-    
-    def check(self):
-        """
-        return the object if it repeats 5 times
-        return false if there is no such object
-        """
-        for p in self._l:
-            if p[3]==5:
-                self.clear()
-                return p
-        return False
-
-    def clear(self):
-        """
-        clear the list
-        """
-        self._l=[]
-
-    def selfcheck_helper(self,c):
-        """
-        help to check if c can be considered in self
-        return false if c is new
-
-        Parameter c: the information about the object---[x,y,r]
-        Precondition: c is a list
-        """
-        for al in self._l:
-            if abs(al[2]-c[2])<10 and ((al[0]-c[0])**2+(al[1]-c[1])**2)**0.5<al[2]/2:
-                return al
-        return False
-    
+            count=[]
+            for i in range(cupscount):
+                count.append(self._p.count(i+1)) #count the number of each potential object
+                #print(count)
+            self.test=copy.deepcopy(count)
+            a=max(count)
+            a_index=count.index(a)
+            if len(count)==1:
+                self.setobject(a_index+1)
+            else:
+                count_2=count[:a_index]+count[a_index+1:] #remove the max
+                b=max(count_2)
+                if a-b>30:
+                    self.setobject(a_index+1)
+                else:
+                    self.setobject(None)
